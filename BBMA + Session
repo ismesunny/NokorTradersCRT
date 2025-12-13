@@ -1,0 +1,96 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0
+// © LeviathanCapital + BBMA by SV (v5 conversion)
+
+//@version=5
+indicator("Market Sessions + BBMA (Combined)", overlay = true,
+     max_boxes_count = 500, max_labels_count = 500, max_lines_count = 500)
+
+// ======================================================
+// =================== CODE A ============================
+// ===== Market Sessions - By Leviathan ==================
+// ======================================================
+
+// Session 1 - user inputs
+showTokyo      = input.bool(true, '', inline='Tokyo', group='Sessions')
+stringTokyo    = input.string('Tokyo', '', inline='Tokyo', group='Sessions')
+TokyoTimeX     = input.session("0000-0900", inline='Tokyo2', group='Sessions')
+TokyoCol       = input.color(color.rgb(255,153,0,90), '', inline='Tokyo', group='Sessions')
+
+// Session 2
+showLondon     = input.bool(true, '', inline='London', group='Sessions')
+stringLondon   = input.string('London', '', inline='London', group='Sessions')
+LondonTimeX    = input.session("0700-1600", inline='London2', group='Sessions')
+LondonCol      = input.color(color.rgb(76,175,79,90), '', inline='London', group='Sessions')
+
+// Session 3
+showNewYork    = input.bool(true, '', inline='New York', group='Sessions')
+stringNewYork  = input.string('New York', '', inline='New York', group='Sessions')
+NewYorkTimeX   = input.session("1300-2200", inline='New York2', group='Sessions')
+NewYorkCol     = input.color(color.rgb(33,149,243,90), '', inline='New York', group='Sessions')
+
+// Session 4
+showSydney     = input.bool(false, '', inline='Sydney', group='Sessions')
+stringSydney   = input.string('Sydney', '', inline='Sydney', group='Sessions')
+SydneyTimeX    = input.session("2100-0600", inline='Sydney2', group='Sessions')
+SydneyCol      = input.color(color.rgb(164,97,187,90), '', inline='Sydney', group='Sessions')
+
+// Settings
+hideWeekends = input.bool(true, "Hide Weekends", group="Settings")
+SessionZone  = input.string("UTC", "Session Timezone", group="Settings")
+
+TokyoTime   = hideWeekends ? TokyoTimeX+":123456" : TokyoTimeX+":1234567"
+LondonTime  = hideWeekends ? LondonTimeX+":123456" : LondonTimeX+":1234567"
+NewYorkTime = hideWeekends ? NewYorkTimeX+":123456" : NewYorkTimeX+":1234567"
+SydneyTime  = hideWeekends ? SydneyTimeX+":123456" : SydneyTimeX+":1234567"
+
+// Session logic
+inTokyo   = not na(time(timeframe.period, TokyoTime, SessionZone))
+inLondon  = not na(time(timeframe.period, LondonTime, SessionZone))
+inNewYork = not na(time(timeframe.period, NewYorkTime, SessionZone))
+inSydney  = not na(time(timeframe.period, SydneyTime, SessionZone))
+
+bgcolor(inTokyo   and showTokyo   ? TokyoCol   : na)
+bgcolor(inLondon  and showLondon  ? LondonCol  : na)
+bgcolor(inNewYork and showNewYork ? NewYorkCol : na)
+bgcolor(inSydney  and showSydney  ? SydneyCol  : na)
+
+// ======================================================
+// =================== CODE B ============================
+// ============ BBMA BY SV (v5) ==========================
+// ======================================================
+
+// Bollinger Bands
+bbLength = 20
+bbMult   = 2.0
+
+midBB = ta.sma(close, bbLength)
+devBB = bbMult * ta.stdev(close, bbLength)
+topBB = midBB + devBB
+lowBB = midBB - devBB
+
+plot(midBB, color=color.rgb(80,104,171), linewidth=2, title="Mid BB")
+plot(topBB, color=color.black, linewidth=1, title="Top BB")
+plot(lowBB, color=color.black, linewidth=1, title="Low BB")
+
+// WMAs
+wma5h  = ta.wma(high, 5)
+wma10h = ta.wma(high,10)
+wma5l  = ta.wma(low , 5)
+wma10l = ta.wma(low ,10)
+
+mahi5h  = plot(wma5h,  color=color.red,     linewidth=1, title="WMA 5H")
+mahi10h = plot(wma10h, color=color.orange,  linewidth=1, title="WMA 10H")
+malo5l  = plot(wma5l,  color=color.fuchsia, linewidth=1, title="WMA 5L")
+malo10l = plot(wma10l, color=color.gray,    linewidth=1, title="WMA 10L")
+
+// EMA 50
+plot(ta.ema(close, 50), color=color.aqua, linewidth=2, title="EMA 50")
+
+// WMA Fill Areas
+fill(mahi5h, mahi10h,
+     color = wma5h > wma10h ? color.new(color.gray,70) : color.new(color.red,70),
+     title="High WMA Area")
+
+fill(malo5l, malo10l,
+     color = wma5l > wma10l ? color.new(color.green,70) : color.new(color.gray,70),
+     title="Low WMA Area")
